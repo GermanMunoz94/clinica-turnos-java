@@ -261,7 +261,6 @@ public class MedicoTurnoVista extends JFrame {
                 .collect(Collectors.toList());
         delDia.forEach(modeloTurnos::addElement);
 
-        // reset detalle
         actualizarDetalle(null);
     }
 
