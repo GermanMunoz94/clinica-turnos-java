@@ -15,7 +15,7 @@ public class HomeController {
         // Instanciamos los controladores una sola vez
         this.pacienteController = new PacienteController();
         this.medicoController = new MedicoController();
-        this.turnoController = new TurnoController(pacienteController, medicoController);
+        this.turnoController = new TurnoController();
     }
 
     // Cambio de página

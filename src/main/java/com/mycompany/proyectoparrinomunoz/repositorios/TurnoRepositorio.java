@@ -8,6 +8,8 @@ import com.mycompany.proyectoparrinomunoz.Entity.Paciente;
 import com.mycompany.proyectoparrinomunoz.Entity.Turno;
 import java.util.ArrayList;
 import java.util.List;
+import com.mycompany.proyectoparrinomunoz.utils.EmailService;
+
 
 public class TurnoRepositorio {
 
@@ -44,6 +46,37 @@ public class TurnoRepositorio {
             return false;
         }
     }
+
+    private boolean enviarNotificacionTurno(Turno turno) {
+        Paciente paciente = new PacienteRepositorio().obtenerPorId(turno.getPaciente().getIdPaciente());
+        if (paciente == null || paciente.getEmail() == null || paciente.getEmail().isEmpty()) {
+            System.out.println("⚠️ Paciente no encontrado o sin email.");
+            return false;
+        }
+
+        Medico medico = new MedicoRepositorio().obtenerPorId(turno.getMedico().getIdMedico());
+
+        String asunto = "Confirmación de turno médico";
+        String contenido = """
+        <h2>Confirmación de Turno Médico</h2>
+        <p>Estimado/a <b>%s %s</b>,</p>
+        <p>Le confirmamos su turno con el Dr./Dra. <b>%s %s</b> el día <b>%s</b> a las <b>%s</b>.</p>
+        <p>Gracias por confiar en nosotros.</p>
+        <br>
+        <p><i>Este es un mensaje automático, por favor no responda.</i></p>
+        """.formatted(
+                paciente.getNombre(),
+                paciente.getApellido(),
+                medico.getNombre(),
+                medico.getApellido(),
+                turno.getFecha(),
+                turno.getHora()
+        );
+
+        EmailService emailService = new EmailService();
+        return emailService.enviarCorreo(paciente.getEmail(), asunto, contenido);
+    }
+
 
     // OBTENER UN TURNO POR ID
     public Turno obtenerPorId(int idTurno) {
@@ -135,7 +168,7 @@ public class TurnoRepositorio {
     // Buscar turnos por paciente
     public List<Turno> obtenerPorPaciente(int idPaciente) {
         List<Turno> turnos = new ArrayList<>();
-        String sql = "SELECT * FROM turno WHERE id_paciente = ?";
+        String sql = "SELECT * FROM turno WHERE id_paciente = ? ORDER BY fecha DESC, hora DESC";
         try (Connection conn = conexion.estableConexion();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
@@ -151,7 +184,6 @@ public class TurnoRepositorio {
                         medico,
                         rs.getString("fecha"),
                         rs.getString("hora")
-
                 );
                 turnos.add(turno);
             }
@@ -160,5 +192,6 @@ public class TurnoRepositorio {
         }
         return turnos;
     }
+
 }
         

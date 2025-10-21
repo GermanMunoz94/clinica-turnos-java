@@ -10,8 +10,11 @@ public class TurnoController {
 
     private TurnoService turnoService;
 
-    public TurnoController(PacienteController pacienteController, MedicoController medicoController) {
+    public TurnoController() {
         this.turnoService = new TurnoService();
+    }
+
+    public TurnoController(PacienteController pacienteController, MedicoController medicoController) {
     }
 
     // CREAR TURNO a partir de datos sueltos
@@ -37,21 +40,24 @@ public class TurnoController {
 
     // BUSCAR TURNO POR ID
     public Turno buscarTurnoPorId(int idTurno) {
-        return turnoService.obtenerTurnoPorId(idTurno);
+        return turnoService.obtenerPorId(idTurno);
     }
 
     // LISTAR TURNOS POR PACIENTE
     public List<Turno> listarTurnosPorPaciente(int idPaciente) {
-        return turnoService.obtenerTurnosPorPaciente(idPaciente);
+        return turnoService.obtenerPorPaciente(idPaciente);
     }
 
     // LISTAR TURNOS POR MÉDICO
     public List<Turno> listarTurnosPorMedico(int idMedico) {
-        return turnoService.obtenerTurnosPorMedico(idMedico);
+        return turnoService.obtenerPorMedico(idMedico);
     }
 
-    // ELIMINAR TURNO POR ID
+    public boolean crearTurno(Turno nuevo) {
+        return false;
+    }
+
     public boolean eliminarTurno(int idTurno) {
-        return turnoService.eliminarTurno(idTurno);
+        return false;
     }
 }

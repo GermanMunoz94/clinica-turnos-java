@@ -5,7 +5,6 @@ import com.mycompany.proyectoparrinomunoz.Entity.Diagnostico;
 import com.mycompany.proyectoparrinomunoz.Entity.Turno;
 
 import java.sql.*;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 

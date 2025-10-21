@@ -7,31 +7,14 @@ import com.mycompany.proyectoparrinomunoz.Controller.TurnoController;
 import com.mycompany.proyectoparrinomunoz.Entity.Medico;
 import com.mycompany.proyectoparrinomunoz.Entity.Paciente;
 import com.mycompany.proyectoparrinomunoz.Entity.Turno;
-import com.mycompany.proyectoparrinomunoz.Entity.Diagnostico;
-
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.lang.reflect.Constructor;
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.Date;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
-/**
- * Vista para que el MÉDICO vea sus turnos del día/fecha seleccionada,
- * consulte datos del paciente y (en el siguiente paso) cargue diagnóstico.
- *
- * Si tienes JCalendar (com.toedter.calendar.JCalendar) en el classpath, se muestra un calendario real.
- * Si no, se usa un selector de fecha (JSpinner) como fallback.
- */
 public class MedicoTurnoVista extends JFrame {
 
     private final int idMedico;
@@ -39,24 +22,13 @@ public class MedicoTurnoVista extends JFrame {
     private final PacienteController pacienteController;
     private final MedicoController medicoController;
 
-    // UI
+    private JComboBox<Paciente> cbPacientes;
     private DefaultListModel<Turno> modeloTurnos;
     private JList<Turno> listaTurnos;
-    private JPanel panelDetalle;
-    private JLabel lblPaciente;
-    private JLabel lblDni;
-    private JLabel lblMail;
-    private JLabel lblTel;
-    private JLabel lblFecha;
-    private JLabel lblHora;
-    private JTextArea txtDiagnosticoPrevio;
-    private JButton btnAtender;
-    private JButton btnAgregarDx;
-    private JButton btnCancelar;
 
-    // “Calendario” (dinámico: JCalendar si existe, sino JSpinner)
-    private JComponent selectorFecha;
-    private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+    private JLabel lblPaciente, lblDni, lblMail, lblTel, lblFecha, lblHora;
+    private JTextArea txtDiagnosticoPrevio;
+    private JButton btnAgregarDx, btnAtender, btnCancelar;
 
     public MedicoTurnoVista(int idMedico,
                             TurnoController turnoController,
@@ -67,13 +39,12 @@ public class MedicoTurnoVista extends JFrame {
         this.pacienteController = pacienteController;
         this.medicoController = medicoController;
 
-        setTitle("Agenda del Médico");
+        setTitle("Gestión de Turnos Médicos");
         setSize(900, 560);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
         initUI();
-        cargarTurnosParaFecha(getFechaSeleccionada());
     }
 
     // ---------------- UI ----------------
@@ -90,7 +61,6 @@ public class MedicoTurnoVista extends JFrame {
     private JComponent crearHeader() {
         JPanel header = new JPanel(new BorderLayout(10, 10));
 
-        // Info del médico
         Medico med = medicoController.buscarMedicoPorId(idMedico);
         String titulo = (med != null)
                 ? "Agenda de " + med.getNombre() + " " + med.getApellido() + " — " + med.getEspecialidad()
@@ -99,8 +69,7 @@ public class MedicoTurnoVista extends JFrame {
         lbl.setFont(lbl.getFont().deriveFont(Font.BOLD, 16f));
         header.add(lbl, BorderLayout.WEST);
 
-        // Leyenda
-        JLabel leyenda = new JLabel("Seleccione una fecha y un turno para ver detalles.");
+        JLabel leyenda = new JLabel("Seleccione un paciente para ver sus turnos y diagnósticos.");
         leyenda.setForeground(Color.DARK_GRAY);
         header.add(leyenda, BorderLayout.EAST);
 
@@ -111,59 +80,52 @@ public class MedicoTurnoVista extends JFrame {
         JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         split.setResizeWeight(0.45);
 
-        // Izquierda: Calendario + Lista
         JPanel izquierda = new JPanel(new BorderLayout(10, 10));
-        izquierda.add(crearPanelFecha(), BorderLayout.NORTH);
+        izquierda.add(crearPanelPacientes(), BorderLayout.NORTH);
         izquierda.add(crearPanelLista(), BorderLayout.CENTER);
 
-        // Derecha: Detalle
-        panelDetalle = crearPanelDetalle();
+        JPanel derecha = crearPanelDetalle();
 
         split.setLeftComponent(izquierda);
-        split.setRightComponent(panelDetalle);
+        split.setRightComponent(derecha);
         return split;
     }
 
-    private JComponent crearPanelFecha() {
+    private JComponent crearPanelPacientes() {
         JPanel p = new JPanel(new BorderLayout(6, 6));
-        p.setBorder(BorderFactory.createTitledBorder("Fecha"));
+        p.setBorder(BorderFactory.createTitledBorder("Seleccionar Paciente"));
 
-        selectorFecha = crearSelectorFecha(); // JCalendar si existe, sino JSpinner
-
-        // Listener de cambios de fecha
-        if (selectorFecha.getClass().getName().equals("com.toedter.calendar.JCalendar")) {
-            // JCalendar -> addPropertyChangeListener("calendar")
-            selectorFecha.addPropertyChangeListener(evt -> {
-                if ("calendar".equals(evt.getPropertyName())) {
-                    cargarTurnosParaFecha(getFechaSeleccionada());
-                }
-            });
-        } else {
-            // JSpinner fallback
-            if (selectorFecha instanceof JSpinner sp) {
-                sp.addChangeListener(e -> cargarTurnosParaFecha(getFechaSeleccionada()));
-            }
+        cbPacientes = new JComboBox<>();
+        List<Paciente> pacientes = pacienteController.listarPacientes();
+        for (Paciente pac : pacientes) {
+            cbPacientes.addItem(pac);
         }
 
-        p.add(selectorFecha, BorderLayout.CENTER);
+        cbPacientes.addActionListener(e -> {
+            Paciente seleccionado = (Paciente) cbPacientes.getSelectedItem();
+            if (seleccionado != null) {
+                cargarTurnosPorPaciente(seleccionado.getIdPaciente());
+            }
+        });
+
+        p.add(cbPacientes, BorderLayout.CENTER);
         return p;
     }
 
     private JComponent crearPanelLista() {
         JPanel p = new JPanel(new BorderLayout(6, 6));
-        p.setBorder(BorderFactory.createTitledBorder("Turnos del día"));
+        p.setBorder(BorderFactory.createTitledBorder("Turnos del paciente"));
 
         modeloTurnos = new DefaultListModel<>();
         listaTurnos = new JList<>(modeloTurnos);
         listaTurnos.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         listaTurnos.setCellRenderer((list, value, index, isSelected, cellHasFocus) -> {
             JLabel lab = new JLabel();
-            String linea = (value != null)
-                    ? String.format("%s %s — %s %s",
-                    value.getFecha(), value.getHora(),
-                    value.getPaciente().getNombre(), value.getPaciente().getApellido())
-                    : "";
-            lab.setText(linea);
+            if (value != null) {
+                lab.setText(String.format("📅 %s %s — %s (%s)",
+                        value.getFecha(), value.getHora(),
+                        value.getMedico().getNombre(), value.getMedico().getEspecialidad()));
+            }
             lab.setOpaque(true);
             lab.setBorder(new EmptyBorder(6, 8, 6, 8));
             lab.setBackground(isSelected ? list.getSelectionBackground() : Color.WHITE);
@@ -177,7 +139,6 @@ public class MedicoTurnoVista extends JFrame {
             }
         });
 
-        // Doble click = “Atender”
         listaTurnos.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2 && listaTurnos.getSelectedValue() != null) {
@@ -218,11 +179,10 @@ public class MedicoTurnoVista extends JFrame {
         txtDiagnosticoPrevio.setWrapStyleWord(true);
 
         JPanel dxPanel = new JPanel(new BorderLayout());
-        dxPanel.setBorder(BorderFactory.createTitledBorder("Diagnóstico previo"));
+        dxPanel.setBorder(BorderFactory.createTitledBorder("Historial de diagnósticos"));
         dxPanel.add(new JScrollPane(txtDiagnosticoPrevio), BorderLayout.CENTER);
 
         p.add(dxPanel, BorderLayout.CENTER);
-
         return p;
     }
 
@@ -253,14 +213,10 @@ public class MedicoTurnoVista extends JFrame {
 
     // ---------------- LÓGICA ----------------
 
-    private void cargarTurnosParaFecha(LocalDate fecha) {
+    private void cargarTurnosPorPaciente(int idPaciente) {
         modeloTurnos.clear();
-        List<Turno> todos = turnoController.listarTurnosPorMedico(idMedico);
-        List<Turno> delDia = todos.stream()
-                .filter(t -> Objects.equals(t.getFecha(), fecha.toString()))
-                .collect(Collectors.toList());
-        delDia.forEach(modeloTurnos::addElement);
-
+        List<Turno> turnosPaciente = turnoController.listarTurnosPorPaciente(idPaciente);
+        turnosPaciente.forEach(modeloTurnos::addElement);
         actualizarDetalle(null);
     }
 
@@ -285,7 +241,6 @@ public class MedicoTurnoVista extends JFrame {
         lblFecha.setText(t.getFecha());
         lblHora.setText(t.getHora());
 
-        // 🔍 Mostrar historial de diagnósticos del paciente
         DiagnosticoController dxController = new DiagnosticoController();
         List<com.mycompany.proyectoparrinomunoz.Entity.Diagnostico> historial =
                 dxController.obtenerDiagnosticosPorPaciente(p.getIdPaciente());
@@ -304,7 +259,6 @@ public class MedicoTurnoVista extends JFrame {
         }
     }
 
-
     private void atenderTurno(Turno t) {
         String msg = "Atendiendo a: " + t.getPaciente().getNombre() + " " + t.getPaciente().getApellido()
                 + " — " + t.getFecha() + " " + t.getHora();
@@ -321,7 +275,6 @@ public class MedicoTurnoVista extends JFrame {
         new DiagnosticoVista(t, dxController).setVisible(true);
     }
 
-
     // ---------------- Helpers ----------------
 
     private JLabel negrita(String s) {
@@ -329,38 +282,4 @@ public class MedicoTurnoVista extends JFrame {
         l.setFont(l.getFont().deriveFont(Font.BOLD));
         return l;
     }
-
-    private LocalDate getFechaSeleccionada() {
-        if (selectorFecha.getClass().getName().equals("com.toedter.calendar.JCalendar")) {
-            try {
-                Date d = (Date) selectorFecha.getClass().getMethod("getDate").invoke(selectorFecha);
-                return d.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-            } catch (Exception ignored) { }
-        }
-        // Fallback: JSpinner
-        if (selectorFecha instanceof JSpinner sp) {
-            Date d = (Date) sp.getValue();
-            return d.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        }
-        return LocalDate.now();
-    }
-
-    private JComponent crearSelectorFecha() {
-        // Intentar JCalendar (reflexión para no romper si no está)
-        try {
-            Class<?> calClass = Class.forName("com.toedter.calendar.JCalendar");
-            Constructor<?> c = calClass.getConstructor();
-            JComponent cal = (JComponent) c.newInstance();
-            // setear fecha hoy
-            calClass.getMethod("setDate", Date.class).invoke(cal, new Date());
-            return cal;
-        } catch (Exception ignore) {
-            // Fallback: JSpinner con fecha
-            JSpinner sp = new JSpinner(new SpinnerDateModel(new Date(), null, null, java.util.Calendar.DAY_OF_MONTH));
-            JSpinner.DateEditor editor = new JSpinner.DateEditor(sp, "yyyy-MM-dd");
-            sp.setEditor(editor);
-            return sp;
-        }
-    }
 }
-
