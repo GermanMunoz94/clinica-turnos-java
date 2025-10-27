@@ -6,33 +6,41 @@ package com.mycompany.proyectoparrinomunoz.Entity;
 
 public class Paciente {
 
-    private int id_paciente;
+    private int idPaciente;
     private String nombre;
     private String apellido;
     private String dni;
-    private String email;
     private String telefono;
+    private String email;
 
-    public Paciente(int idPaciente, String nombre, String apellido, String dni, String email, String telefono) {
-        this.id_paciente = idPaciente;
+    // === Constructores ===
+    public Paciente() {}
+
+    public Paciente(int idPaciente, String nombre, String apellido, String dni, String telefono, String email) {
+        this.idPaciente = idPaciente;
         this.nombre = nombre;
         this.apellido = apellido;
         this.dni = dni;
-        this.email = email;
         this.telefono = telefono;
+        this.email = email;
     }
 
-    @Override
-    public String toString() {
-        return apellido + ", " + nombre;
+    // Constructor alternativo sin ID (para inserciones)
+    public Paciente(String nombre, String apellido, String dni, String telefono, String email) {
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.dni = dni;
+        this.telefono = telefono;
+        this.email = email;
     }
 
+    // === Getters y Setters ===
     public int getIdPaciente() {
-        return id_paciente;
+        return idPaciente;
     }
 
     public void setIdPaciente(int idPaciente) {
-        this.id_paciente = idPaciente;
+        this.idPaciente = idPaciente;
     }
 
     public String getNombre() {
@@ -59,14 +67,6 @@ public class Paciente {
         this.dni = dni;
     }
 
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
     public String getTelefono() {
         return telefono;
     }
@@ -75,4 +75,17 @@ public class Paciente {
         this.telefono = telefono;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    // === Representación en texto (para JComboBox, logs, etc.) ===
+    @Override
+    public String toString() {
+        return nombre + " " + apellido + " (" + dni + ")";
+    }
 }

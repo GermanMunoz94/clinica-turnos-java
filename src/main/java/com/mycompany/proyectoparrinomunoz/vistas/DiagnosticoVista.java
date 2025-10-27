@@ -1,117 +1,235 @@
 package com.mycompany.proyectoparrinomunoz.vistas;
 
+import com.formdev.flatlaf.FlatLightLaf;
 import com.mycompany.proyectoparrinomunoz.Controller.DiagnosticoController;
+import com.mycompany.proyectoparrinomunoz.Controller.MedicoController;
+import com.mycompany.proyectoparrinomunoz.Controller.PacienteController;
+import com.mycompany.proyectoparrinomunoz.Controller.TurnoController;
 import com.mycompany.proyectoparrinomunoz.Entity.Diagnostico;
+import com.mycompany.proyectoparrinomunoz.Entity.Medico;
+import com.mycompany.proyectoparrinomunoz.Entity.Paciente;
 import com.mycompany.proyectoparrinomunoz.Entity.Turno;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.util.List;
 
 public class DiagnosticoVista extends JFrame {
 
     private final DiagnosticoController diagnosticoController;
-    private final Turno turno;
+    private final PacienteController pacienteController;
+    private final MedicoController medicoController;
+    private final TurnoController turnoController;
 
-    private JTextField txtFecha;
+    private JTable tablaDiagnosticos;
+    private DefaultTableModel modelo;
+    private JComboBox<Paciente> cmbPaciente;
+    private JComboBox<Medico> cmbMedico;
+    private JComboBox<Turno> cmbTurno;
     private JTextArea txtDescripcion;
-    private JTextArea txtReceta;
-    private JButton btnGuardar;
-    private JButton btnCancelar;
 
-    public DiagnosticoVista(Turno turno, DiagnosticoController diagnosticoController) {
-        this.turno = turno;
-        this.diagnosticoController = diagnosticoController;
-
-        setTitle("Registrar Diagnóstico");
-        setSize(600, 500);
-        setLocationRelativeTo(null);
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+    public DiagnosticoVista() {
+        FlatLightLaf.setup();
+        diagnosticoController = new DiagnosticoController();
+        pacienteController = new PacienteController();
+        medicoController = new MedicoController();
+        turnoController = new TurnoController();
 
         initUI();
+        cargarCombos();
+        listarDiagnosticos();
     }
 
     private void initUI() {
+        setTitle("Gestión de Diagnósticos");
+        setSize(950, 500);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLayout(new BorderLayout(10, 10));
 
-        // ---- ENCABEZADO ----
-        JLabel lblTitulo = new JLabel("Diagnóstico de " +
-                turno.getPaciente().getNombre() + " " + turno.getPaciente().getApellido(),
-                SwingConstants.CENTER);
-        lblTitulo.setFont(new Font("Arial", Font.BOLD, 18));
-        lblTitulo.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
-        add(lblTitulo, BorderLayout.NORTH);
+        JPanel panelFormulario = new JPanel(new GridLayout(5, 2, 10, 10));
+        panelFormulario.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
 
-        // ---- FORMULARIO ----
-        JPanel panelForm = new JPanel(new GridLayout(3, 1, 10, 10));
-        panelForm.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        cmbPaciente = new JComboBox<>();
+        cmbMedico = new JComboBox<>();
+        cmbTurno = new JComboBox<>();
+        txtDescripcion = new JTextArea(3, 20);
 
-        // Fecha (solo lectura)
-        txtFecha = new JTextField(LocalDate.now().toString());
-        txtFecha.setEditable(false);
-        JPanel panelFecha = new JPanel(new BorderLayout());
-        panelFecha.add(new JLabel("Fecha del Diagnóstico:"), BorderLayout.NORTH);
-        panelFecha.add(txtFecha, BorderLayout.CENTER);
-        panelForm.add(panelFecha);
+        JButton btnAgregar = new JButton("Agregar");
+        JButton btnActualizar = new JButton("Actualizar");
+        JButton btnEliminar = new JButton("Eliminar");
 
-        // Descripción
-        txtDescripcion = new JTextArea(5, 30);
-        txtDescripcion.setLineWrap(true);
-        txtDescripcion.setWrapStyleWord(true);
-        JScrollPane scrollDesc = new JScrollPane(txtDescripcion);
-        JPanel panelDesc = new JPanel(new BorderLayout());
-        panelDesc.add(new JLabel("Descripción del Diagnóstico:"), BorderLayout.NORTH);
-        panelDesc.add(scrollDesc, BorderLayout.CENTER);
-        panelForm.add(panelDesc);
+        btnAgregar.addActionListener(e -> agregarDiagnostico());
+        btnActualizar.addActionListener(e -> actualizarDiagnostico());
+        btnEliminar.addActionListener(e -> eliminarDiagnostico());
 
-        // Receta
-        txtReceta = new JTextArea(4, 30);
-        txtReceta.setLineWrap(true);
-        txtReceta.setWrapStyleWord(true);
-        JScrollPane scrollReceta = new JScrollPane(txtReceta);
-        JPanel panelReceta = new JPanel(new BorderLayout());
-        panelReceta.add(new JLabel("Receta / Tratamiento:"), BorderLayout.NORTH);
-        panelReceta.add(scrollReceta, BorderLayout.CENTER);
-        panelForm.add(panelReceta);
+        panelFormulario.add(new JLabel("Paciente:"));
+        panelFormulario.add(cmbPaciente);
+        panelFormulario.add(new JLabel("Médico:"));
+        panelFormulario.add(cmbMedico);
+        panelFormulario.add(new JLabel("Turno:"));
+        panelFormulario.add(cmbTurno);
+        panelFormulario.add(new JLabel("Descripción:"));
+        panelFormulario.add(new JScrollPane(txtDescripcion));
+        panelFormulario.add(btnAgregar);
+        panelFormulario.add(btnActualizar);
 
-        add(panelForm, BorderLayout.CENTER);
+        add(panelFormulario, BorderLayout.NORTH);
 
-        // ---- BOTONES ----
-        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        btnGuardar = new JButton("Guardar");
-        btnCancelar = new JButton("Cancelar");
+        modelo = new DefaultTableModel(new String[]{
+                "ID", "Paciente", "Médico", "Turno", "Descripción"
+        }, 0);
+        tablaDiagnosticos = new JTable(modelo);
+        JScrollPane scroll = new JScrollPane(tablaDiagnosticos);
 
-        panelBotones.add(btnGuardar);
-        panelBotones.add(btnCancelar);
+        JPanel panelInferior = new JPanel(new BorderLayout());
+        panelInferior.add(scroll, BorderLayout.CENTER);
+        panelInferior.add(btnEliminar, BorderLayout.SOUTH);
 
-        add(panelBotones, BorderLayout.SOUTH);
+        add(panelInferior, BorderLayout.CENTER);
 
-        // ---- ACCIONES ----
-        btnGuardar.addActionListener(e -> guardarDiagnostico());
-        btnCancelar.addActionListener(e -> dispose());
+        // === Habilitar selección y carga de campos ===
+        tablaDiagnosticos.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tablaDiagnosticos.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int fila = tablaDiagnosticos.getSelectedRow();
+                if (fila != -1) {
+                    txtDescripcion.setText(modelo.getValueAt(fila, 4).toString());
+
+                    String pacienteStr = modelo.getValueAt(fila, 1).toString();
+                    String medicoStr = modelo.getValueAt(fila, 2).toString();
+                    String turnoStr = modelo.getValueAt(fila, 3).toString();
+
+                    // Seleccionar paciente
+                    for (int i = 0; i < cmbPaciente.getItemCount(); i++) {
+                        Paciente p = cmbPaciente.getItemAt(i);
+                        if (p.toString().equals(pacienteStr)) {
+                            cmbPaciente.setSelectedIndex(i);
+                            break;
+                        }
+                    }
+
+                    // Seleccionar médico
+                    for (int i = 0; i < cmbMedico.getItemCount(); i++) {
+                        Medico m = cmbMedico.getItemAt(i);
+                        if (m.toString().equals(medicoStr)) {
+                            cmbMedico.setSelectedIndex(i);
+                            break;
+                        }
+                    }
+
+                    // Seleccionar turno
+                    for (int i = 0; i < cmbTurno.getItemCount(); i++) {
+                        Turno t = cmbTurno.getItemAt(i);
+                        if (t.toString().equals(turnoStr)) {
+                            cmbTurno.setSelectedIndex(i);
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+
     }
 
-    private void guardarDiagnostico() {
-        String descripcion = txtDescripcion.getText().trim();
-        String receta = txtReceta.getText().trim();
+    private void cargarCombos() {
+        cmbPaciente.removeAllItems();
+        for (Paciente p : pacienteController.listarPacientes()) {
+            cmbPaciente.addItem(p);
+        }
 
-        if (descripcion.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Debe ingresar la descripción del diagnóstico.");
+        cmbMedico.removeAllItems();
+        for (Medico m : medicoController.listarMedicos()) {
+            cmbMedico.addItem(m);
+        }
+
+        cmbTurno.removeAllItems();
+        for (Turno t : turnoController.listarTurnos()) {
+            cmbTurno.addItem(t);
+        }
+    }
+
+    private void listarDiagnosticos() {
+        modelo.setRowCount(0);
+        List<Diagnostico> diagnosticos = diagnosticoController.listarDiagnosticos();
+
+        for (Diagnostico d : diagnosticos) {
+            modelo.addRow(new Object[]{
+                    d.getIdDiagnostico(),
+                    d.getPaciente() != null ? d.getPaciente().toString() : "Sin asignar",
+                    d.getMedico() != null ? d.getMedico().toString() : "Sin asignar",
+                    (d.getTurno() != null) ? d.getTurno().toString() : "Sin turno",
+                    d.getDescripcion()
+            });
+        }
+    }
+
+    private void agregarDiagnostico() {
+        Paciente paciente = (Paciente) cmbPaciente.getSelectedItem();
+        Medico medico = (Medico) cmbMedico.getSelectedItem();
+        Turno turno = (Turno) cmbTurno.getSelectedItem();
+        String descripcion = txtDescripcion.getText().trim();
+
+        if (paciente == null || medico == null || turno == null || descripcion.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Debe completar todos los campos antes de continuar.");
             return;
         }
 
-        /*Diagnostico diag = new Diagnostico(0, turno, txtFecha.getText(), descripcion, receta);*/
-        Diagnostico diag = new Diagnostico(0, turno, LocalDateTime.now(), descripcion, receta);
-
-
-        boolean ok = diagnosticoController.crearDiagnostico(diag);
-        if (ok) {
-            JOptionPane.showMessageDialog(this, "Diagnóstico guardado correctamente.");
-            dispose();
+        Diagnostico d = new Diagnostico(0, paciente, medico, descripcion);
+        if (diagnosticoController.crearDiagnostico(d, turno.getIdTurno())) {
+            JOptionPane.showMessageDialog(this, "Diagnóstico agregado correctamente.");
+            listarDiagnosticos();
+            limpiarCampos();
         } else {
-            JOptionPane.showMessageDialog(this, "Error al guardar el diagnóstico.");
+            JOptionPane.showMessageDialog(this, "Error al agregar diagnóstico.");
         }
     }
-}
 
+    private void actualizarDiagnostico() {
+        int fila = tablaDiagnosticos.getSelectedRow();
+        if (fila == -1) {
+            JOptionPane.showMessageDialog(this, "Seleccione un diagnóstico para actualizar.");
+            return;
+        }
+
+        int id = (int) modelo.getValueAt(fila, 0);
+        Paciente paciente = (Paciente) cmbPaciente.getSelectedItem();
+        Medico medico = (Medico) cmbMedico.getSelectedItem();
+        String descripcion = txtDescripcion.getText().trim();
+
+        Diagnostico d = new Diagnostico(id, paciente, medico, descripcion);
+        if (diagnosticoController.actualizarDiagnostico(d)) {
+            JOptionPane.showMessageDialog(this, "Diagnóstico actualizado correctamente.");
+            listarDiagnosticos();
+            limpiarCampos();
+        } else {
+            JOptionPane.showMessageDialog(this, "Error al actualizar diagnóstico.");
+        }
+    }
+
+    private void eliminarDiagnostico() {
+        int fila = tablaDiagnosticos.getSelectedRow();
+        if (fila == -1) {
+            JOptionPane.showMessageDialog(this, "Seleccione un diagnóstico para eliminar.");
+            return;
+        }
+
+        int id = (int) modelo.getValueAt(fila, 0);
+        int confirmar = JOptionPane.showConfirmDialog(this,
+                "¿Desea eliminar este diagnóstico?", "Confirmación", JOptionPane.YES_NO_OPTION);
+
+        if (confirmar == JOptionPane.YES_OPTION) {
+            if (diagnosticoController.eliminarDiagnostico(id)) {
+                JOptionPane.showMessageDialog(this, "Diagnóstico eliminado correctamente.");
+                listarDiagnosticos();
+            } else {
+                JOptionPane.showMessageDialog(this, "Error al eliminar diagnóstico.");
+            }
+        }
+    }
+
+    private void limpiarCampos() {
+        txtDescripcion.setText("");
+    }
+}

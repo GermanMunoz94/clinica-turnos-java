@@ -6,21 +6,27 @@ public class Medico {
     private String nombre;
     private String apellido;
     private String especialidad;
-    private String matricula;
+    private String telefono;
 
-    public Medico(int idMedico, String nombre, String apellido, String especialidad, String matricula) {
+    // === Constructores ===
+    public Medico() {}
+
+    public Medico(int idMedico, String nombre, String apellido, String especialidad, String telefono) {
         this.idMedico = idMedico;
         this.nombre = nombre;
         this.apellido = apellido;
         this.especialidad = especialidad;
-        this.matricula = matricula;
+        this.telefono = telefono;
     }
 
-    @Override
-    public String toString() {
-        return apellido + ", " + nombre + " (" + especialidad + ")";
+    public Medico(String nombre, String apellido, String especialidad, String telefono) {
+        this.nombre = nombre;
+        this.apellido = apellido;
+        this.especialidad = especialidad;
+        this.telefono = telefono;
     }
 
+    // === Getters y Setters ===
     public int getIdMedico() {
         return idMedico;
     }
@@ -53,12 +59,17 @@ public class Medico {
         this.especialidad = especialidad;
     }
 
-    public String getMatricula() {
-        return matricula;
+    public String getTelefono() {
+        return telefono;
     }
 
-    public void setMatricula(String matricula) {
-        this.matricula = matricula;
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
     }
 
+    // === Representación en texto (para JComboBox, logs, etc.) ===
+    @Override
+    public String toString() {
+        return nombre + " " + apellido + " (" + especialidad + ")";
+    }
 }

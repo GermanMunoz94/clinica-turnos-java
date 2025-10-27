@@ -3,40 +3,68 @@
 package com.mycompany.proyectoparrinomunoz.Entity;
 
 public class Usuario {
+
     private int idUsuario;
-    private String email;
-    private String password;
-    private String rol;
-    private int idRelacionado;
+    private String usuario;
+    private String contrasenia;
+    private String rol; // Ej: "ADMIN", "MEDICO", "RECEPCION", etc.
 
-    public Usuario() {}
-
-    public Usuario(int idUsuario, String email, String password, String rol, int idRelacionado) {
-        this.idUsuario = idUsuario;
-        this.email = email;
-        this.password = password;
-        this.rol = rol;
-        this.idRelacionado = idRelacionado;
+    // Constructores
+    public Usuario() {
     }
 
-    public int getIdUsuario() { return idUsuario; }
-    public void setIdUsuario(int idUsuario) { this.idUsuario = idUsuario; }
+    public Usuario(int idUsuario, String usuario, String contrasenia, String rol) {
+        this.idUsuario = idUsuario;
+        this.usuario = usuario;
+        this.contrasenia = contrasenia;
+        this.rol = rol;
+    }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    public Usuario(String usuario, String contrasenia, String rol) {
+        this.usuario = usuario;
+        this.contrasenia = contrasenia;
+        this.rol = rol;
+    }
 
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
+    public Usuario(int i, String admin, String admin1, String administrador, String admin2) {
 
-    public String getRol() { return rol; }
-    public void setRol(String rol) { this.rol = rol; }
+    }
 
-    public int getIdRelacionado() { return idRelacionado; }
-    public void setIdRelacionado(int idRelacionado) { this.idRelacionado = idRelacionado; }
+    // Getters y setters
+    public int getIdUsuario() {
+        return idUsuario;
+    }
+
+    public void setIdUsuario(int idUsuario) {
+        this.idUsuario = idUsuario;
+    }
+
+    public String getUsuario() {
+        return usuario != null ? usuario : "";
+    }
+
+    public void setUsuario(String usuario) {
+        this.usuario = usuario;
+    }
+
+    public String getContrasenia() {
+        return contrasenia != null ? contrasenia : "";
+    }
+
+    public void setContrasenia(String contrasenia) {
+        this.contrasenia = contrasenia;
+    }
+
+    public String getRol() {
+        return rol != null ? rol : "";
+    }
+
+    public void setRol(String rol) {
+        this.rol = rol;
+    }
 
     @Override
     public String toString() {
-        return rol + " — " + email;
+        return usuario + " (" + rol + ")";
     }
 }
-

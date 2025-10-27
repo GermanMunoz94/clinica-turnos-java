@@ -1,6 +1,6 @@
 package com.mycompany.proyectoparrinomunoz.vistas;
 
-import com.mycompany.proyectoparrinomunoz.Controller.UsuarioController;
+/*import com.mycompany.proyectoparrinomunoz.Controller.UsuarioController;
 
 import javax.swing.*;
 import java.awt.*;
@@ -77,5 +77,5 @@ public class RegistroUsuarioVista extends JFrame {
             JOptionPane.showMessageDialog(this, "El ID relacionado debe ser numérico.");
         }
     }
-}
+}*/
 

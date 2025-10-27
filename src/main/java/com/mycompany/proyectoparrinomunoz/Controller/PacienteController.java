@@ -2,6 +2,8 @@ package com.mycompany.proyectoparrinomunoz.Controller;
 
 import com.mycompany.proyectoparrinomunoz.Entity.Paciente;
 import com.mycompany.proyectoparrinomunoz.Service.PacienteService;
+
+import java.util.Collections;
 import java.util.List;
 
 public class PacienteController {
@@ -12,34 +14,64 @@ public class PacienteController {
         this.pacienteService = new PacienteService();
     }
 
-    // CREAR PACIENTE
-    public boolean crearPaciente(String nombre, String apellido, String dni, String email, String telefono) {
-        Paciente paciente = new Paciente(0, nombre, apellido, dni, email, telefono);
-        return pacienteService.crearPaciente(paciente);
+    // === Crear Paciente ===
+    public boolean crearPaciente(Paciente p) {
+        try {
+            return pacienteService.crearPaciente(p);
+        } catch (Exception e) {
+            System.err.println("Error en crearPaciente(): " + e.getMessage());
+            return false;
+        }
     }
 
-    // AGREGAR PACIENTE desde un objeto
-    public boolean agregarPaciente(Paciente p) {
-        return pacienteService.crearPaciente(p);
-    }
-
-    // ACTUALIZAR PACIENTE
+    // === Actualizar Paciente ===
     public boolean actualizarPaciente(Paciente p) {
-        return pacienteService.actualizarPaciente(p);
+        try {
+            return pacienteService.actualizarPaciente(p);
+        } catch (Exception e) {
+            System.err.println("Error en actualizarPaciente(): " + e.getMessage());
+            return false;
+        }
     }
 
-    // LISTAR TODOS LOS PACIENTES
-    public List<Paciente> listarPacientes() {
-        return pacienteService.obtenerTodos();
-    }
-
-    // BUSCAR PACIENTE POR ID
-    public Paciente buscarPacientePorId(int id) {
-        return pacienteService.obtenerPacientePorId(id);
-    }
-
-    // ELIMINAR PACIENTE POR ID
+    // === Eliminar Paciente ===
     public boolean eliminarPaciente(int idPaciente) {
-        return pacienteService.eliminarPaciente(idPaciente);
+        try {
+            return pacienteService.eliminarPaciente(idPaciente);
+        } catch (Exception e) {
+            System.err.println("Error en eliminarPaciente(): " + e.getMessage());
+            return false;
+        }
+    }
+
+    // === Listar Pacientes ===
+    public List<Paciente> listarPacientes() {
+        try {
+            List<Paciente> lista = pacienteService.obtenerTodos();
+            return lista != null ? lista : Collections.emptyList();
+        } catch (Exception e) {
+            System.err.println("Error en listarPacientes(): " + e.getMessage());
+            return Collections.emptyList();
+        }
+    }
+
+    // === Buscar por ID ===
+    public Paciente buscarPacientePorId(int idPaciente) {
+        try {
+            return pacienteService.obtenerPacientePorId(idPaciente);
+        } catch (Exception e) {
+            System.err.println("Error en buscarPacientePorId(): " + e.getMessage());
+            return null;
+        }
+    }
+
+    // === Buscar por DNI ===
+    public Paciente buscarPacientePorDni(String dni) {
+        try {
+            return pacienteService.buscarPorDni(dni);
+        } catch (Exception e) {
+            System.err.println("Error en buscarPacientePorDni(): " + e.getMessage());
+            return null;
+        }
     }
 }

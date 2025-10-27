@@ -1,50 +1,90 @@
 package com.mycompany.proyectoparrinomunoz.Service;
+
 import com.mycompany.proyectoparrinomunoz.Entity.Paciente;
 import com.mycompany.proyectoparrinomunoz.repositorios.PacienteRepositorio;
+
 import java.util.List;
 
 public class PacienteService {
 
-    private PacienteRepositorio pacienteRepositorio;
+    private final PacienteRepositorio pacienteRepo;
 
     public PacienteService() {
-        pacienteRepositorio = new PacienteRepositorio();
+        this.pacienteRepo = new PacienteRepositorio();
     }
 
-    // CREAR PACIENTE
+    // === Crear Paciente ===
     public boolean crearPaciente(Paciente paciente) {
-        // Validaciones básicas
-        if (paciente.getNombre() == null || paciente.getNombre().isEmpty()) return false;
-        if (paciente.getApellido() == null || paciente.getApellido().isEmpty()) return false;
-        if (paciente.getDni() == null || paciente.getDni().isEmpty()) return false;
+        if (!validarPaciente(paciente)) {
+            System.err.println("Error: datos del paciente incompletos o inválidos.");
+            return false;
+        }
 
-        return pacienteRepositorio.crearPaciente(paciente);
+        // Evita duplicados por DNI
+        List<Paciente> existentes = pacienteRepo.obtenerTodos();
+        boolean duplicado = existentes.stream()
+                .anyMatch(p -> p.getDni().equalsIgnoreCase(paciente.getDni()));
+
+        if (duplicado) {
+            System.err.println("Error: ya existe un paciente con ese DNI.");
+            return false;
+        }
+
+        return pacienteRepo.crearPaciente(paciente);
     }
 
-    // OBTENER PACIENTE POR ID
-    public Paciente obtenerPacientePorId(int idPaciente) {
-        return pacienteRepositorio.obtenerPorId(idPaciente);
-    }
-
-    // OBTENER TODOS LOS PACIENTES
-    public List<Paciente> obtenerTodos() {
-        return pacienteRepositorio.obtenerTodos();
-    }
-
-    // ACTUALIZAR PACIENTE
+    // === Actualizar Paciente ===
     public boolean actualizarPaciente(Paciente paciente) {
-        if (paciente.getIdPaciente() <= 0) return false;
-        return pacienteRepositorio.actualizarPaciente(paciente);
+        if (paciente == null || paciente.getIdPaciente() <= 0) {
+            System.err.println("Error: ID de paciente no válido.");
+            return false;
+        }
+
+        if (!validarPaciente(paciente)) {
+            System.err.println("Error: datos del paciente incompletos.");
+            return false;
+        }
+
+        return pacienteRepo.actualizarPaciente(paciente);
     }
 
-    // ELIMINAR PACIENTE
+    // === Eliminar Paciente ===
     public boolean eliminarPaciente(int idPaciente) {
-        if (idPaciente <= 0) return false;
-        return pacienteRepositorio.eliminarPaciente(idPaciente);
+        if (idPaciente <= 0) {
+            System.err.println("Error: ID de paciente inválido.");
+            return false;
+        }
+        return pacienteRepo.eliminarPaciente(idPaciente);
     }
 
-    // BUSCAR PACIENTES POR NOMBRE O APELLIDO
-    public List<Paciente> buscarPacientes(String texto) {
-        return pacienteRepositorio.buscarPorNombreApellido(texto);
+    // === Obtener todos los pacientes ===
+    public List<Paciente> obtenerTodos() {
+        return pacienteRepo.obtenerTodos();
+    }
+
+    // === Buscar paciente por ID ===
+    public Paciente obtenerPacientePorId(int idPaciente) {
+        if (idPaciente <= 0) {
+            System.err.println("Error: ID de paciente inválido.");
+            return null;
+        }
+        return pacienteRepo.obtenerPorId(idPaciente);
+    }
+
+    // === Buscar paciente por DNI ===
+    public Paciente buscarPorDni(String dni) {
+        if (dni == null || dni.isBlank()) {
+            System.err.println("Error: DNI vacío o nulo.");
+            return null;
+        }
+        return pacienteRepo.buscarPorDni(dni);
+    }
+
+    // === Validación interna ===
+    private boolean validarPaciente(Paciente p) {
+        return p != null &&
+                p.getNombre() != null && !p.getNombre().isBlank() &&
+                p.getApellido() != null && !p.getApellido().isBlank() &&
+                p.getDni() != null && !p.getDni().isBlank();
     }
 }

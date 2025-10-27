@@ -4,36 +4,54 @@ package com.mycompany.proyectoparrinomunoz;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class Conexion {
 
-    Connection conectar = null;
-    String usuario = "root";
-    String contrasenia = "root";
-    String bd = "bd_medica";
-    String IP = "localhost";
-    String puerto = "3306";
-    String cadena = "jdbc:mysql://" + IP + ":" + puerto + "/" + bd;
+    private static final String USUARIO = "root";
+    private static final String CONTRASENIA = "root";
+    private static final String BD = "bd_medica";
+    private static final String IP = "localhost";
+    private static final String PUERTO = "3306";
 
-    public Connection estableConexion() {
+    private static final String URL = "jdbc:mysql://" + IP + ":" + PUERTO + "/" + BD
+            + "?useSSL=false&serverTimezone=America/Argentina/Buenos_Aires&allowPublicKeyRetrieval=true";
+
+    public Conexion() {
+        // Evita instanciación
+    }
+
+    public static Connection getConexion() {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            conectar = DriverManager.getConnection(cadena, usuario, contrasenia);
-            System.out.println("Se conecto correctamente");
+            return DriverManager.getConnection(URL, USUARIO, CONTRASENIA);
+        } catch (ClassNotFoundException e) {
+            System.err.println("❌ No se encontró el driver JDBC de MySQL.");
+        } catch (SQLException e) {
+            System.err.println("❌ Error al conectar a la base de datos: " + e.getMessage());
         } catch (Exception e) {
-            System.out.println("No se conecto a la base de datos, error :  " + e);
+            System.err.println("❌ Error desconocido al conectar: " + e.getMessage());
         }
-        return conectar;
-
+        return null;
     }
-    
-    public void getDesconectar() {
-        try {
-            conectar.close();
-        } catch (SQLException ex) {
-            Logger.getLogger(Conexion.class.getName()).log(Level.SEVERE, null, ex);
+
+    public static void cerrarConexion(Connection conn) {
+        if (conn != null) {
+            try {
+                if (!conn.isClosed()) {
+                    conn.close();
+                    // System.out.println("🔌 Conexión cerrada correctamente.");
+                }
+            } catch (SQLException e) {
+                System.err.println("⚠️ Error al cerrar la conexión: " + e.getMessage());
+            }
+        }
+    }
+
+    public static boolean probarConexion() {
+        try (Connection conn = getConexion()) {
+            return conn != null && !conn.isClosed();
+        } catch (SQLException e) {
+            return false;
         }
     }
 }

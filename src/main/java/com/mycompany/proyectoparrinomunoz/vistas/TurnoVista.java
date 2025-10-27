@@ -1,8 +1,7 @@
 package com.mycompany.proyectoparrinomunoz.vistas;
 
+import com.formdev.flatlaf.FlatLightLaf;
 import com.mycompany.proyectoparrinomunoz.Controller.TurnoController;
-import com.mycompany.proyectoparrinomunoz.Controller.PacienteController;
-import com.mycompany.proyectoparrinomunoz.Controller.MedicoController;
 import com.mycompany.proyectoparrinomunoz.Entity.Turno;
 import com.mycompany.proyectoparrinomunoz.Entity.Paciente;
 import com.mycompany.proyectoparrinomunoz.Entity.Medico;
@@ -13,177 +12,198 @@ import java.awt.*;
 import java.util.List;
 
 public class TurnoVista extends JFrame {
-    private JComboBox<Paciente> cbPacientes;
-    private JComboBox<Medico> cbMedicos;
-    private JTextField txtFecha, txtHora;
-    private JButton btnAgregar, btnActualizar, btnEliminar;
-    private JTable tabla;
-    private DefaultTableModel modeloTabla;
 
     private final TurnoController turnoController;
-    private final PacienteController pacienteController;
-    private final MedicoController medicoController;
+    private JComboBox<Paciente> cbPacientes;
+    private JComboBox<Medico> cbMedicos;
+    private JTextField txtFecha;
+    private JTextField txtHora;
+    private JTable tablaTurnos;
+    private DefaultTableModel modelo;
 
-    public TurnoVista(TurnoController turnoController,
-                      PacienteController pacienteController,
-                      MedicoController medicoController) {
-        this.turnoController = turnoController;
-        this.pacienteController = pacienteController;
-        this.medicoController = medicoController;
+    public TurnoVista() {
+        FlatLightLaf.setup();
+        turnoController = new TurnoController();
+        initUI();
+        cargarCombos();
+        listarTurnos();
+    }
 
-        setTitle("Gestión de Turnos");
-        setSize(750, 500);
+    private void initUI() {
+        setTitle("Gestor de Turnos");
+        setSize(800, 500);
         setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setLayout(new BorderLayout(10, 10));
 
-        // === Formulario ===
-        JPanel form = new JPanel(new GridLayout(4, 2, 10, 10));
-        form.setBorder(BorderFactory.createTitledBorder("Datos del Turno"));
+        JPanel panel = new JPanel(new GridLayout(6, 2, 10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
 
         cbPacientes = new JComboBox<>();
         cbMedicos = new JComboBox<>();
-        txtFecha = new JTextField("yyyy-mm-dd");
-        txtHora = new JTextField("HH:mm");
+        txtFecha = new JTextField();
+        txtHora = new JTextField();
 
-        form.add(new JLabel("Paciente:")); form.add(cbPacientes);
-        form.add(new JLabel("Médico:")); form.add(cbMedicos);
-        form.add(new JLabel("Fecha:")); form.add(txtFecha);
-        form.add(new JLabel("Hora:")); form.add(txtHora);
+        JButton btnAgregar = new JButton("Agregar Turno");
+        JButton btnEliminar = new JButton("Eliminar Turno");
+        JButton btnActualizar = new JButton("Actualizar Turno");
 
-        // === Botones ===
-        btnAgregar = new JButton("Agregar");
-        btnActualizar = new JButton("Actualizar");
-        btnEliminar = new JButton("Eliminar");
+        btnAgregar.addActionListener(e -> agregarTurno());
+        btnEliminar.addActionListener(e -> eliminarTurno());
+        btnActualizar.addActionListener(e -> actualizarTurno());
 
-        JPanel acciones = new JPanel(new FlowLayout());
-        acciones.add(btnAgregar);
-        acciones.add(btnActualizar);
-        acciones.add(btnEliminar);
+        panel.add(new JLabel("Paciente:"));
+        panel.add(cbPacientes);
+        panel.add(new JLabel("Médico:"));
+        panel.add(cbMedicos);
+        panel.add(new JLabel("Fecha (YYYY-MM-DD):"));
+        panel.add(txtFecha);
+        panel.add(new JLabel("Hora (HH:MM):"));
+        panel.add(txtHora);
+        panel.add(btnAgregar);
+        panel.add(btnEliminar);
+        panel.add(btnActualizar);
 
-        // === Tabla ===
-        modeloTabla = new DefaultTableModel(new Object[]{"ID", "Paciente", "Médico", "Fecha", "Hora"}, 0);
-        tabla = new JTable(modeloTabla);
-        JScrollPane scroll = new JScrollPane(tabla);
-        scroll.setBorder(BorderFactory.createTitledBorder("Lista de Turnos"));
+        modelo = new DefaultTableModel(new String[]{"ID", "Paciente", "Médico", "Fecha", "Hora"}, 0);
+        tablaTurnos = new JTable(modelo);
+        JScrollPane scroll = new JScrollPane(tablaTurnos);
 
-        // === Layout ===
-        setLayout(new BorderLayout(10, 10));
-
-        JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.add(form, BorderLayout.CENTER);
-        topPanel.add(acciones, BorderLayout.SOUTH);
-
-        add(topPanel, BorderLayout.NORTH);
+        add(panel, BorderLayout.NORTH);
         add(scroll, BorderLayout.CENTER);
 
-        // === Eventos ===
-        btnAgregar.addActionListener(e -> agregarTurno());
-        btnActualizar.addActionListener(e -> actualizarTurno());
-        btnEliminar.addActionListener(e -> eliminarTurno());
+        // === Habilitar selección y carga de campos ===
+        tablaTurnos.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        tablaTurnos.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int fila = tablaTurnos.getSelectedRow();
+                if (fila != -1) {
+                    txtFecha.setText(modelo.getValueAt(fila, 3).toString());
+                    txtHora.setText(modelo.getValueAt(fila, 4).toString());
 
-        tabla.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting() && tabla.getSelectedRow() != -1) {
-                int fila = tabla.getSelectedRow();
-                txtFecha.setText(modeloTabla.getValueAt(fila, 3).toString());
-                txtHora.setText(modeloTabla.getValueAt(fila, 4).toString());
+                    String pacienteStr = modelo.getValueAt(fila, 1).toString();
+                    String medicoStr = modelo.getValueAt(fila, 2).toString();
 
-                // Selecciona automáticamente en los combos
-                String pacienteNombre = modeloTabla.getValueAt(fila, 1).toString();
-                for (int i = 0; i < cbPacientes.getItemCount(); i++) {
-                    Paciente p = cbPacientes.getItemAt(i);
-                    if ((p.getNombre() + " " + p.getApellido()).equals(pacienteNombre)) {
-                        cbPacientes.setSelectedIndex(i);
-                        break;
+                    // Selecciona el paciente correspondiente
+                    for (int i = 0; i < cbPacientes.getItemCount(); i++) {
+                        Paciente p = cbPacientes.getItemAt(i);
+                        String nombreCompleto = p.getNombre() + " " + p.getApellido();
+                        if (nombreCompleto.equals(pacienteStr)) {
+                            cbPacientes.setSelectedIndex(i);
+                            break;
+                        }
                     }
-                }
 
-                String medicoNombre = modeloTabla.getValueAt(fila, 2).toString();
-                for (int i = 0; i < cbMedicos.getItemCount(); i++) {
-                    Medico m = cbMedicos.getItemAt(i);
-                    if ((m.getNombre() + " " + m.getApellido()).equals(medicoNombre)) {
-                        cbMedicos.setSelectedIndex(i);
-                        break;
+                    // Selecciona el médico correspondiente
+                    for (int i = 0; i < cbMedicos.getItemCount(); i++) {
+                        Medico m = cbMedicos.getItemAt(i);
+                        String nombreCompleto = m.getNombre() + " " + m.getApellido();
+                        if (nombreCompleto.equals(medicoStr)) {
+                            cbMedicos.setSelectedIndex(i);
+                            break;
+                        }
                     }
                 }
             }
         });
 
-        cargarCombos();
-        cargarTurnos();
     }
-
-    // Métodos internos
 
     private void cargarCombos() {
         cbPacientes.removeAllItems();
-        List<Paciente> pacientes = pacienteController.listarPacientes();
-        for (Paciente p : pacientes) cbPacientes.addItem(p);
-
         cbMedicos.removeAllItems();
-        List<Medico> medicos = medicoController.listarMedicos();
-        for (Medico m : medicos) cbMedicos.addItem(m);
+
+        List<Paciente> pacientes = turnoController.listarPacientes();
+        List<Medico> medicos = turnoController.listarMedicos();
+
+        if (pacientes != null) {
+            for (Paciente p : pacientes) cbPacientes.addItem(p);
+        }
+        if (medicos != null) {
+            for (Medico m : medicos) cbMedicos.addItem(m);
+        }
     }
 
-    private void cargarTurnos() {
-        modeloTabla.setRowCount(0);
-        List<Turno> lista = turnoController.listarTurnos();
-        for (Turno t : lista) {
-            modeloTabla.addRow(new Object[]{t.getIdTurno(),
+    private void listarTurnos() {
+        modelo.setRowCount(0);
+        List<Turno> turnos = turnoController.listarTurnos();
+
+        for (Turno t : turnos) {
+            modelo.addRow(new Object[]{
+                    t.getIdTurno(),
                     t.getPaciente().getNombre() + " " + t.getPaciente().getApellido(),
                     t.getMedico().getNombre() + " " + t.getMedico().getApellido(),
                     t.getFecha(),
-                    t.getHora()});
+                    t.getHora()
+            });
         }
     }
 
     private void agregarTurno() {
         Paciente paciente = (Paciente) cbPacientes.getSelectedItem();
         Medico medico = (Medico) cbMedicos.getSelectedItem();
-        Turno t = new Turno(0, paciente, medico, txtFecha.getText(), txtHora.getText());
+        String fecha = txtFecha.getText().trim();
+        String hora = txtHora.getText().trim();
 
-        boolean ok = turnoController.agregarTurno(t);
-        if (ok) {
-            JOptionPane.showMessageDialog(this, "Turno agregado");
-            cargarTurnos();
-        } else {
-            JOptionPane.showMessageDialog(this, "Error al agregar turno");
-        }
-    }
-
-    private void actualizarTurno() {
-        int fila = tabla.getSelectedRow();
-        if (fila == -1) {
-            JOptionPane.showMessageDialog(this, "Selecciona un turno de la tabla");
+        if (paciente == null || medico == null || fecha.isEmpty() || hora.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Debe completar todos los campos.");
             return;
         }
 
-        int id = (int) modeloTabla.getValueAt(fila, 0);
-        Paciente paciente = (Paciente) cbPacientes.getSelectedItem();
-        Medico medico = (Medico) cbMedicos.getSelectedItem();
-        Turno t = new Turno(id, paciente, medico, txtFecha.getText(), txtHora.getText());
+        Turno turno = new Turno(0, paciente, medico, fecha, hora);
+        boolean ok = turnoController.crearTurno(turno);
 
-        boolean ok = turnoController.actualizarTurno(t);
         if (ok) {
-            JOptionPane.showMessageDialog(this, "Turno actualizado");
-            cargarTurnos();
+            JOptionPane.showMessageDialog(this, "Turno agregado correctamente.");
+            listarTurnos();
+            limpiarCampos();
         } else {
-            JOptionPane.showMessageDialog(this, "Error al actualizar turno");
+            JOptionPane.showMessageDialog(this, "Error al agregar turno.");
         }
     }
 
     private void eliminarTurno() {
-        int fila = tabla.getSelectedRow();
+        int fila = tablaTurnos.getSelectedRow();
         if (fila == -1) {
-            JOptionPane.showMessageDialog(this, "Selecciona un turno de la tabla");
+            JOptionPane.showMessageDialog(this, "Seleccione un turno.");
+            return;
+        }
+        int id = (int) modelo.getValueAt(fila, 0);
+        if (turnoController.eliminarTurno(id)) {
+            JOptionPane.showMessageDialog(this, "Turno eliminado.");
+            listarTurnos();
+            limpiarCampos();
+        } else {
+            JOptionPane.showMessageDialog(this, "Error al eliminar turno.");
+        }
+    }
+
+    private void actualizarTurno() {
+        int fila = tablaTurnos.getSelectedRow();
+        if (fila == -1) {
+            JOptionPane.showMessageDialog(this, "Seleccione un turno.");
             return;
         }
 
-        int id = (int) modeloTabla.getValueAt(fila, 0);
-        boolean ok = turnoController.eliminarTurno(id);
-        if (ok) {
-            JOptionPane.showMessageDialog(this, "Turno eliminado");
-            cargarTurnos();
+        int id = (int) modelo.getValueAt(fila, 0);
+        Paciente paciente = (Paciente) cbPacientes.getSelectedItem();
+        Medico medico = (Medico) cbMedicos.getSelectedItem();
+        String fecha = txtFecha.getText().trim();
+        String hora = txtHora.getText().trim();
+
+        Turno t = new Turno(id, paciente, medico, fecha, hora);
+        if (turnoController.actualizarTurno(t)) {
+            JOptionPane.showMessageDialog(this, "Turno actualizado.");
+            listarTurnos();
+            limpiarCampos();
         } else {
-            JOptionPane.showMessageDialog(this, "Error al eliminar turno");
+            JOptionPane.showMessageDialog(this, "Error al actualizar turno.");
         }
+    }
+
+    private void limpiarCampos() {
+        txtFecha.setText("");
+        txtHora.setText("");
+        cbPacientes.setSelectedIndex(-1);
+        cbMedicos.setSelectedIndex(-1);
     }
 }

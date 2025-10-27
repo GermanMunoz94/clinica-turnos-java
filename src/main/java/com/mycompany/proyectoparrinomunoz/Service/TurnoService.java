@@ -1,81 +1,97 @@
 
 package com.mycompany.proyectoparrinomunoz.Service;
 
+import com.mycompany.proyectoparrinomunoz.Entity.Medico;
+import com.mycompany.proyectoparrinomunoz.Entity.Paciente;
 import com.mycompany.proyectoparrinomunoz.Entity.Turno;
-import com.mycompany.proyectoparrinomunoz.repositorios.MedicoRepositorio;
-import com.mycompany.proyectoparrinomunoz.repositorios.PacienteRepositorio;
 import com.mycompany.proyectoparrinomunoz.repositorios.TurnoRepositorio;
 
 import java.util.List;
 
 public class TurnoService {
 
-    private TurnoRepositorio turnoRepositorio;
-    private PacienteRepositorio pacienteRepositorio;
-    private MedicoRepositorio medicoRepositorio;
+    private final TurnoRepositorio turnoRepositorio;
 
     public TurnoService() {
-        this.turnoRepositorio = new TurnoRepositorio();
-        this.pacienteRepositorio = new PacienteRepositorio();
-        this.medicoRepositorio = new MedicoRepositorio();
+        turnoRepositorio = new TurnoRepositorio();
     }
 
-    // === CREAR TURNO ===
-    public boolean crearTurno(Turno turno) {
-        // Validaciones básicas
-        if (turno == null) return false;
-        if (turno.getPaciente() == null || turno.getMedico() == null) return false;
-        if (turno.getFecha() == null || turno.getFecha().isEmpty()) return false;
-        if (turno.getHora() == null || turno.getHora().isEmpty()) return false;
-
-        // Validar existencia en BD
-        if (pacienteRepositorio.obtenerPorId(turno.getPaciente().getIdPaciente()) == null) {
-            System.err.println("❌ Error: el paciente no existe en la base de datos.");
-            return false;
-        }
-        if (medicoRepositorio.obtenerPorId(turno.getMedico().getIdMedico()) == null) {
-            System.err.println("❌ Error: el médico no existe en la base de datos.");
+    // === Crear turno ===
+    public boolean crearTurno(Turno t) {
+        if (!validarTurno(t)) {
+            System.err.println("Error: datos del turno inválidos.");
             return false;
         }
 
-        // Crear turno
-        boolean resultado = turnoRepositorio.crearTurno(turno);
-        if (!resultado) {
-            System.err.println("⚠️ No se pudo crear el turno en la base de datos.");
+        // Verificar conflicto de horario del médico
+        List<Turno> turnosMedico = turnoRepositorio.listarTurnosPorMedico(t.getMedico().getIdMedico());
+        boolean conflicto = turnosMedico.stream()
+                .anyMatch(existing -> existing.getFecha().equals(t.getFecha())
+                        && existing.getHora().equals(t.getHora()));
+
+        if (conflicto) {
+            System.err.println("Error: el médico ya tiene un turno en esa fecha y hora.");
+            return false;
         }
-        return resultado;
+
+        return turnoRepositorio.crearTurno(t);
     }
 
-    // === OBTENER TODOS ===
-    public List<Turno> obtenerTodos() {
-        return turnoRepositorio.obtenerTodos();
+    // === Actualizar turno ===
+    public boolean actualizarTurno(Turno t) {
+        if (!validarTurno(t) || t.getIdTurno() <= 0) {
+            System.err.println("Error: turno no válido para actualización.");
+            return false;
+        }
+
+        // El repositorio actual no implementa UPDATE, pero se deja preparado
+        System.err.println("Advertencia: método actualizarTurno() aún no implementado en el repositorio.");
+        return false;
     }
 
-    // === OBTENER POR PACIENTE ===
-    public List<Turno> obtenerPorPaciente(int idPaciente) {
-        return turnoRepositorio.obtenerPorPaciente(idPaciente);
+    // === Eliminar turno ===
+    public boolean eliminarTurno(int id) {
+        if (id <= 0) {
+            System.err.println("Error: ID de turno no válido.");
+            return false;
+        }
+        return turnoRepositorio.eliminarTurno(id);
     }
 
-    // === OBTENER POR MÉDICO ===
-    public List<Turno> obtenerPorMedico(int idMedico) {
-        return turnoRepositorio.obtenerTodos()
-                .stream()
-                .filter(t -> t.getMedico().getIdMedico() == idMedico)
-                .toList();
+    // === Listar todos los turnos ===
+    public List<Turno> listarTurnos() {
+        return turnoRepositorio.listarTurnos();
     }
 
-    // === OBTENER POR ID ===
-    public Turno obtenerPorId(int idTurno) {
-        return turnoRepositorio.obtenerPorId(idTurno);
+    // === Listar turnos por médico ===
+    public List<Turno> listarTurnosPorMedico(int idMedico) {
+        if (idMedico <= 0) {
+            System.err.println("Error: ID de médico no válido.");
+            return List.of();
+        }
+        return turnoRepositorio.listarTurnosPorMedico(idMedico);
     }
 
-    // === ACTUALIZAR ===
-    public boolean actualizarTurno(Turno turno) {
-        return turnoRepositorio.actualizarTurno(turno);
+    // === Listar turnos por paciente ===
+    public List<Turno> listarTurnosPorPaciente(int idPaciente) {
+        if (idPaciente <= 0) {
+            System.err.println("Error: ID de paciente no válido.");
+            return List.of();
+        }
+        return turnoRepositorio.listarTurnosPorPaciente(idPaciente);
     }
 
-    // === ELIMINAR ===
-    public boolean eliminarTurno(int idTurno) {
-        return turnoRepositorio.eliminarTurno(idTurno);
+    // === Validar turno ===
+    public boolean validarTurno(Turno t) {
+        if (t == null) return false;
+
+        Paciente p = t.getPaciente();
+        Medico m = t.getMedico();
+
+        return p != null && m != null &&
+                p.getIdPaciente() > 0 &&
+                m.getIdMedico() > 0 &&
+                t.getFecha() != null && !t.getFecha().isBlank() &&
+                t.getHora() != null && !t.getHora().isBlank();
     }
 }

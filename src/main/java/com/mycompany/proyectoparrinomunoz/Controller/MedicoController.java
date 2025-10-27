@@ -2,49 +2,77 @@ package com.mycompany.proyectoparrinomunoz.Controller;
 
 import com.mycompany.proyectoparrinomunoz.Entity.Medico;
 import com.mycompany.proyectoparrinomunoz.Service.MedicoService;
+
+import java.util.Collections;
 import java.util.List;
 
 public class MedicoController {
 
-    private MedicoService medicoService;
+    private final MedicoService medicoService;
 
     public MedicoController() {
-        this.medicoService = new MedicoService();
+        medicoService = new MedicoService();
     }
 
-    // CREAR MÉDICO a partir de datos sueltos
-    public boolean crearMedico(String nombre, String apellido, String especialidad, String matricula) {
-        Medico medico = new Medico(0, nombre, apellido, especialidad, matricula);
-        return medicoService.crearMedico(medico);
+    // === Crear médico ===
+    public boolean crearMedico(Medico medico) {
+        try {
+            return medicoService.crearMedico(medico);
+        } catch (Exception e) {
+            System.err.println("Error en crearMedico(): " + e.getMessage());
+            return false;
+        }
     }
 
-    // AGREGAR MÉDICO desde un objeto Medico
-    public boolean agregarMedico(Medico m) {
-        return medicoService.crearMedico(m);
-    }
-
-    // ACTUALIZAR MÉDICO
-    public boolean actualizarMedico(Medico m) {
-        return medicoService.actualizarMedico(m);
-    }
-
-    // LISTAR TODOS LOS MÉDICOS
+    // === Listar todos los médicos ===
     public List<Medico> listarMedicos() {
-        return medicoService.obtenerTodos();
+        try {
+            List<Medico> lista = medicoService.listarMedicos();
+            return lista != null ? lista : Collections.emptyList();
+        } catch (Exception e) {
+            System.err.println("Error en listarMedicos(): " + e.getMessage());
+            return Collections.emptyList();
+        }
     }
 
-    // BUSCAR MÉDICO POR ID
-    public Medico buscarMedicoPorId(int idMedico) {
-        return medicoService.obtenerMedicoPorId(idMedico);
+    // === Buscar médico por ID ===
+    public Medico obtenerPorId(int idMedico) {
+        try {
+            return medicoService.obtenerPorId(idMedico);
+        } catch (Exception e) {
+            System.err.println("Error en obtenerPorId(): " + e.getMessage());
+            return null;
+        }
     }
 
-    // LISTAR MÉDICOS POR ESPECIALIDAD
-    public List<Medico> listarMedicosPorEspecialidad(String especialidad) {
-        return medicoService.buscarPorEspecialidad(especialidad);
+    // === Actualizar médico ===
+    public boolean actualizarMedico(Medico medico) {
+        try {
+            return medicoService.actualizarMedico(medico);
+        } catch (Exception e) {
+            System.err.println("Error en actualizarMedico(): " + e.getMessage());
+            return false;
+        }
     }
 
-    // ELIMINAR MÉDICO POR ID
+    // === Eliminar médico ===
     public boolean eliminarMedico(int idMedico) {
-        return medicoService.eliminarMedico(idMedico);
+        try {
+            return medicoService.eliminarMedico(idMedico);
+        } catch (Exception e) {
+            System.err.println("Error en eliminarMedico(): " + e.getMessage());
+            return false;
+        }
+    }
+
+    // === Buscar médicos por especialidad ===
+    public List<Medico> buscarPorEspecialidad(String especialidad) {
+        try {
+            List<Medico> lista = medicoService.buscarPorEspecialidad(especialidad);
+            return lista != null ? lista : Collections.emptyList();
+        } catch (Exception e) {
+            System.err.println("Error en buscarPorEspecialidad(): " + e.getMessage());
+            return Collections.emptyList();
+        }
     }
 }

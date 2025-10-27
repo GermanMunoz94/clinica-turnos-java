@@ -2,67 +2,71 @@ package com.mycompany.proyectoparrinomunoz.Service;
 
 import com.mycompany.proyectoparrinomunoz.Entity.Diagnostico;
 import com.mycompany.proyectoparrinomunoz.repositorios.DiagnosticoRepositorio;
-
-import java.util.ArrayList;
 import java.util.List;
 
 public class DiagnosticoService {
 
-    private DiagnosticoRepositorio diagnosticoRepositorio;
+    private final DiagnosticoRepositorio diagnosticoRepo;
 
     public DiagnosticoService() {
-        this.diagnosticoRepositorio = new DiagnosticoRepositorio();
+        this.diagnosticoRepo = new DiagnosticoRepositorio();
     }
 
-    // === CREAR DIAGNOSTICO ===
-    public boolean crearDiagnostico(Diagnostico diagnostico) {
-        if (diagnostico == null || diagnostico.getTurno() == null) {
-            System.err.println("❌ Error: diagnóstico o turno nulo");
+    // === Crear Diagnóstico ===
+    // === Crear Diagnóstico ===
+    public boolean crearDiagnostico(Diagnostico diagnostico, int idTurno) {
+        if (diagnostico == null) return false;
+        if (diagnostico.getDescripcion() == null || diagnostico.getDescripcion().isEmpty()) return false;
+        if (idTurno <= 0) {
+            System.err.println("Error: ID de turno inválido.");
             return false;
         }
-        return diagnosticoRepositorio.crearDiagnostico(diagnostico);
+        return diagnosticoRepo.crearDiagnostico(diagnostico, idTurno);
     }
 
-    // === OBTENER DIAGNOSTICO POR ID ===
-    public Diagnostico obtenerDiagnosticoPorId(int idDiagnostico) {
-        return diagnosticoRepositorio.obtenerPorId(idDiagnostico);
-    }
 
-    // === OBTENER TODOS LOS DIAGNOSTICOS ===
-    public List<Diagnostico> obtenerTodos() {
-        return diagnosticoRepositorio.obtenerTodos();
-    }
-
-    // === OBTENER POR TURNO ===
-    public List<Diagnostico> obtenerPorTurno(int idTurno) {
-        return diagnosticoRepositorio.obtenerPorTurno(idTurno);
-    }
-
-    // === ACTUALIZAR ===
+    // === Actualizar Diagnóstico ===
     public boolean actualizarDiagnostico(Diagnostico diagnostico) {
         if (diagnostico == null || diagnostico.getIdDiagnostico() <= 0) {
-            System.err.println("❌ Error: diagnóstico inválido para actualizar");
+            System.err.println("Error: ID de diagnóstico inválido.");
             return false;
         }
-        return diagnosticoRepositorio.actualizarDiagnostico(diagnostico);
+        if (!validarDiagnostico(diagnostico)) {
+            System.err.println("Error: datos del diagnóstico incompletos.");
+            return false;
+        }
+        return diagnosticoRepo.actualizarDiagnostico(diagnostico);
     }
 
-    // === ELIMINAR ===
+    // === Eliminar Diagnóstico ===
     public boolean eliminarDiagnostico(int idDiagnostico) {
         if (idDiagnostico <= 0) {
-            System.err.println("❌ Error: ID de diagnóstico inválido");
+            System.err.println("Error: ID de diagnóstico inválido.");
             return false;
         }
-        return diagnosticoRepositorio.eliminarDiagnostico(idDiagnostico);
+        return diagnosticoRepo.eliminarDiagnostico(idDiagnostico);
     }
 
-    public List<Diagnostico> obtenerPorPaciente(int idPaciente) {
-        if (idPaciente <= 0) {
-            System.err.println("⚠️ ID de paciente inválido: " + idPaciente);
-            return new ArrayList<>();
+    // === Listar todos ===
+    public List<Diagnostico> listarDiagnosticos() {
+        return diagnosticoRepo.listarDiagnosticos();
+    }
+
+    // === Buscar por ID ===
+    public Diagnostico buscarPorId(int idDiagnostico) {
+        if (idDiagnostico <= 0) {
+            System.err.println("Error: ID de diagnóstico inválido para búsqueda.");
+            return null;
         }
-        return diagnosticoRepositorio.obtenerPorPaciente(idPaciente);
+        return diagnosticoRepo.obtenerPorId(idDiagnostico);
     }
 
+    // === Validar Diagnóstico ===
+    private boolean validarDiagnostico(Diagnostico d) {
+        return d != null &&
+                d.getPaciente() != null &&
+                d.getMedico() != null &&
+                d.getDescripcion() != null &&
+                !d.getDescripcion().isBlank();
+    }
 }
-

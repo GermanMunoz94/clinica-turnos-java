@@ -1,74 +1,110 @@
 package com.mycompany.proyectoparrinomunoz.vistas;
 
-import com.mycompany.proyectoparrinomunoz.Controller.MedicoController;
-import com.mycompany.proyectoparrinomunoz.Controller.PacienteController;
-import com.mycompany.proyectoparrinomunoz.Controller.TurnoController;
+import com.formdev.flatlaf.FlatLightLaf;
+import com.mycompany.proyectoparrinomunoz.Entity.Usuario;
 
 import javax.swing.*;
 import java.awt.*;
 
 public class Principal extends JFrame {
 
-    public Principal() {
-        setTitle("Sistema Médico - Menú Principal (Administrador)");
-        setSize(400, 450);
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
+    private final Usuario usuario;
+
+    public Principal(Usuario usuario) {
+        FlatLightLaf.setup();
+        this.usuario = usuario;
+        initUI();
+    }
+
+    private void initUI() {
+        setTitle("Gestor de Turnos - Menú Principal");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(600, 400);
         setLocationRelativeTo(null);
+        setLayout(new BorderLayout());
 
-        // 🔗 Controladores compartidos
-        PacienteController pacienteController = new PacienteController();
-        MedicoController medicoController = new MedicoController();
-        TurnoController turnoController = new TurnoController();
+        JLabel lblTitulo = new JLabel("Gestor de Turnos", SwingConstants.CENTER);
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        lblTitulo.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
+        add(lblTitulo, BorderLayout.NORTH);
 
-        // 🔘 Botones principales
-        JButton btnPacientes = new JButton("Gestionar Pacientes");
-        JButton btnMedicos = new JButton("Gestionar Médicos");
-        JButton btnTurnos = new JButton("Gestionar Turnos");
-        JButton btnPanelMedico = new JButton("Panel Médico");
-        JButton btnCerrarSesion = new JButton("Cerrar sesión");
-        JButton btnSalir = new JButton("Salir del sistema");
+        JPanel panelBotones = new JPanel(new GridLayout(3, 2, 15, 15));
+        panelBotones.setBorder(BorderFactory.createEmptyBorder(20, 40, 20, 40));
 
-        // 🎨 Layout del menú
-        JPanel panel = new JPanel(new GridLayout(6, 1, 15, 15));
-        panel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
+        JButton btnMedicos = new JButton("Médicos");
+        JButton btnPacientes = new JButton("Pacientes");
+        JButton btnTurnos = new JButton("Turnos");
+        JButton btnDiagnosticos = new JButton("Diagnósticos");
+        JButton btnCerrar = new JButton("Cerrar sesión");
 
-        panel.add(btnPacientes);
-        panel.add(btnMedicos);
-        panel.add(btnTurnos);
-        panel.add(btnPanelMedico);
-        panel.add(btnCerrarSesion);
-        panel.add(btnSalir);
+        // Acciones
+        btnMedicos.addActionListener(e -> abrirVista("medicos"));
+        btnPacientes.addActionListener(e -> abrirVista("pacientes"));
+        btnTurnos.addActionListener(e -> abrirVista("turnos"));
+        btnDiagnosticos.addActionListener(e -> abrirVista("diagnosticos"));
+        btnCerrar.addActionListener(e -> cerrarSesion());
 
-        add(panel, BorderLayout.CENTER);
-
-        // 🧩 Acciones
-        btnPacientes.addActionListener(e -> new PacienteVista(1).setVisible(true));
-        btnMedicos.addActionListener(e -> new MedicoVista(medicoController).setVisible(true));
-        btnTurnos.addActionListener(e -> new TurnoVista(turnoController, pacienteController, medicoController).setVisible(true));
-
-        // 🩺 Simula un médico logueado
-        btnPanelMedico.addActionListener(e -> {
-            int idMedicoLogueado = 1; // Cambiar según base de datos
-            new MedicoTurnoVista(idMedicoLogueado, turnoController, pacienteController, medicoController).setVisible(true);
-        });
-
-        // 🔄 Cerrar sesión: vuelve al Login
-        btnCerrarSesion.addActionListener(e -> {
-            dispose(); // Cierra la ventana actual
-            new LoginVista().setVisible(true);
-        });
-
-        // 🚪 Cierra la aplicación completa
-        btnSalir.addActionListener(e -> {
-            int confirm = JOptionPane.showConfirmDialog(
-                    this,
-                    "¿Seguro que desea salir del sistema?",
-                    "Confirmar salida",
-                    JOptionPane.YES_NO_OPTION
-            );
-            if (confirm == JOptionPane.YES_OPTION) {
-                System.exit(0);
+        // Mostrar botones según rol
+        switch (usuario.getRol().toLowerCase()) {
+            case "admin" -> {
+                panelBotones.add(btnMedicos);
+                panelBotones.add(btnPacientes);
+                panelBotones.add(btnTurnos);
+                panelBotones.add(btnDiagnosticos);
             }
-        });
+            case "medico" -> {
+                panelBotones.add(btnTurnos);
+                panelBotones.add(btnDiagnosticos);
+            }
+            case "paciente" -> {
+                panelBotones.add(btnTurnos);
+            }
+        }
+
+        panelBotones.add(new JLabel());
+        panelBotones.add(btnCerrar);
+
+        add(panelBotones, BorderLayout.CENTER);
+    }
+
+    private void abrirVista(String tipo) {
+        try {
+            switch (tipo) {
+                case "medicos" -> new MedicoVista().setVisible(true);
+                case "pacientes" -> new PacienteVista().setVisible(true);
+                case "turnos" -> {
+                    if (usuario.getRol().equalsIgnoreCase("paciente")) {
+                        // Buscar paciente por id_usuario o simplemente abrir la vista general
+                        new PacienteGestionVista().setVisible(true);
+                    } else if (usuario.getRol().equalsIgnoreCase("medico")) {
+                        new MedicoTurnoVista(usuario.getIdUsuario()).setVisible(true);
+                    } else {
+                        new TurnoVista().setVisible(true);
+                    }
+                }
+                case "diagnosticos" -> new DiagnosticoVista().setVisible(true);
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this,
+                    "Error al abrir la vista: " + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
+    }
+
+
+    private void cerrarSesion() {
+        int confirmar = JOptionPane.showConfirmDialog(this,
+                "¿Desea cerrar sesión?", "Confirmación", JOptionPane.YES_NO_OPTION);
+        if (confirmar == JOptionPane.YES_OPTION) {
+            dispose();
+            new LoginVista().setVisible(true);
+        }
+    }
+
+    public static void main(String[] args) {
+        // Ejemplo de uso sin login real
+        Usuario admin = new Usuario(1, "admin", "admin", "Administrador", "admin");
+        SwingUtilities.invokeLater(() -> new Principal(admin).setVisible(true));
     }
 }

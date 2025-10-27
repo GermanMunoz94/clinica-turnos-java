@@ -2,7 +2,8 @@ package com.mycompany.proyectoparrinomunoz.repositorios;
 
 import com.mycompany.proyectoparrinomunoz.Conexion;
 import com.mycompany.proyectoparrinomunoz.Entity.Diagnostico;
-import com.mycompany.proyectoparrinomunoz.Entity.Turno;
+import com.mycompany.proyectoparrinomunoz.Entity.Medico;
+import com.mycompany.proyectoparrinomunoz.Entity.Paciente;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -10,183 +11,166 @@ import java.util.List;
 
 public class DiagnosticoRepositorio {
 
-    private Conexion conexion;
+    public DiagnosticoRepositorio() {}
 
-    public DiagnosticoRepositorio() {
-        conexion = new Conexion();
-    }
-
-    // === CREAR DIAGNOSTICO ===
-    public boolean crearDiagnostico(Diagnostico diagnostico) {
+    // === Crear diagnóstico ===
+    public boolean crearDiagnostico(Diagnostico d, int idTurno) {
         String sql = "INSERT INTO diagnostico (id_turno, fecha, descripcion, receta) VALUES (?, ?, ?, ?)";
-        try (Connection conn = conexion.estableConexion();
+        try (Connection conn = Conexion.getConexion();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            ps.setInt(1, diagnostico.getTurno().getIdTurno());
-            ps.setTimestamp(2, Timestamp.valueOf(diagnostico.getFecha())); // ✅ Conversión segura
-            ps.setString(3, diagnostico.getDescripcion());
-            ps.setString(4, diagnostico.getReceta());
+            ps.setInt(1, idTurno);
+            ps.setDate(2, Date.valueOf(java.time.LocalDate.now()));
+            ps.setString(3, d.getDescripcion());
+            ps.setString(4, d.getReceta() != null ? d.getReceta() : "");
 
             int filas = ps.executeUpdate();
             if (filas > 0) {
                 ResultSet rs = ps.getGeneratedKeys();
-                if (rs.next()) {
-                    diagnostico.setIdDiagnostico(rs.getInt(1));
-                }
+                if (rs.next()) d.setIdDiagnostico(rs.getInt(1));
             }
             return filas > 0;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("Error en crearDiagnostico(): " + e.getMessage());
             return false;
         }
     }
 
-    // === OBTENER DIAGNOSTICO POR ID ===
+
+    // === Obtener diagnóstico por ID ===
     public Diagnostico obtenerPorId(int idDiagnostico) {
-        String sql = "SELECT * FROM diagnostico WHERE id_diagnostico = ?";
-        try (Connection conn = conexion.estableConexion();
+        String sql = """
+            SELECT d.id_diagnostico, d.descripcion, d.fecha, d.receta,
+                   p.id_paciente, p.nombre AS nombre_paciente, p.apellido AS apellido_paciente,
+                   m.id_medico, m.nombre AS nombre_medico, m.apellido AS apellido_medico,
+                   m.especialidad, m.telefono AS telefono_medico
+            FROM diagnostico d
+            JOIN turno t ON d.id_turno = t.id_turno
+            JOIN paciente p ON t.id_paciente = p.id_paciente
+            JOIN medico m ON t.id_medico = m.id_medico
+            WHERE d.id_diagnostico = ?
+            """;
+        try (Connection conn = Conexion.getConexion();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, idDiagnostico);
             ResultSet rs = ps.executeQuery();
 
             if (rs.next()) {
-                Turno turno = new TurnoRepositorio().obtenerPorId(rs.getInt("id_turno"));
+                Paciente paciente = new Paciente(
+                        rs.getInt("id_paciente"),
+                        rs.getString("nombre_paciente"),
+                        rs.getString("apellido_paciente"),
+                        null, null, null
+                );
+
+                Medico medico = new Medico(
+                        rs.getInt("id_medico"),
+                        rs.getString("nombre_medico"),
+                        rs.getString("apellido_medico"),
+                        rs.getString("especialidad"),
+                        rs.getString("telefono_medico")
+                );
+
                 return new Diagnostico(
                         rs.getInt("id_diagnostico"),
-                        turno,
-                        rs.getTimestamp("fecha").toLocalDateTime(),
-                        rs.getString("descripcion"),
-                        rs.getString("receta")
+                        paciente,
+                        medico,
+                        rs.getString("descripcion")
                 );
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("Error en obtenerPorId(): " + e.getMessage());
         }
         return null;
     }
 
-    // === OBTENER TODOS LOS DIAGNOSTICOS ===
-    public List<Diagnostico> obtenerTodos() {
+
+    // === Listar diagnósticos ===
+    public List<Diagnostico> listarDiagnosticos() {
         List<Diagnostico> lista = new ArrayList<>();
-        String sql = "SELECT * FROM diagnostico";
-        try (Connection conn = conexion.estableConexion();
+        String sql = """
+            SELECT d.id_diagnostico, d.descripcion, d.fecha, d.receta,
+                   p.id_paciente, p.nombre AS nombre_paciente, p.apellido AS apellido_paciente,
+                   m.id_medico, m.nombre AS nombre_medico, m.apellido AS apellido_medico,
+                   m.especialidad, m.telefono AS telefono_medico
+            FROM diagnostico d
+            JOIN turno t ON d.id_turno = t.id_turno
+            JOIN paciente p ON t.id_paciente = p.id_paciente
+            JOIN medico m ON t.id_medico = m.id_medico
+            ORDER BY d.fecha DESC
+            """;
+
+        try (Connection conn = Conexion.getConexion();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
-                Turno turno = new TurnoRepositorio().obtenerPorId(rs.getInt("id_turno"));
-                Diagnostico d = new Diagnostico(
-                        rs.getInt("id_diagnostico"),
-                        turno,
-                        rs.getTimestamp("fecha").toLocalDateTime(),
-                        rs.getString("descripcion"),
-                        rs.getString("receta")
+                Paciente paciente = new Paciente(
+                        rs.getInt("id_paciente"),
+                        rs.getString("nombre_paciente"),
+                        rs.getString("apellido_paciente"),
+                        null, null, null
                 );
-                lista.add(d);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return lista;
-    }
 
-    // === OBTENER DIAGNOSTICOS POR TURNO ===
-    public List<Diagnostico> obtenerPorTurno(int idTurno) {
-        List<Diagnostico> lista = new ArrayList<>();
-        String sql = "SELECT * FROM diagnostico WHERE id_turno = ?";
-        try (Connection conn = conexion.estableConexion();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                Medico medico = new Medico(
+                        rs.getInt("id_medico"),
+                        rs.getString("nombre_medico"),
+                        rs.getString("apellido_medico"),
+                        rs.getString("especialidad"),
+                        rs.getString("telefono_medico")
+                );
 
-            ps.setInt(1, idTurno);
-            ResultSet rs = ps.executeQuery();
-
-            while (rs.next()) {
-                Turno turno = new TurnoRepositorio().obtenerPorId(rs.getInt("id_turno"));
                 Diagnostico d = new Diagnostico(
                         rs.getInt("id_diagnostico"),
-                        turno,
-                        rs.getTimestamp("fecha").toLocalDateTime(),
-                        rs.getString("descripcion"),
-                        rs.getString("receta")
+                        paciente,
+                        medico,
+                        rs.getString("descripcion")
                 );
                 lista.add(d);
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("Error en listarDiagnosticos(): " + e.getMessage());
         }
+
         return lista;
     }
 
-    // === ACTUALIZAR DIAGNOSTICO ===
-    public boolean actualizarDiagnostico(Diagnostico diagnostico) {
-        String sql = "UPDATE diagnostico SET descripcion = ?, receta = ? WHERE id_diagnostico = ?";
-        try (Connection conn = conexion.estableConexion();
+
+    // === Actualizar diagnóstico ===
+    public boolean actualizarDiagnostico(Diagnostico d) {
+        String sql = "UPDATE diagnostico SET id_paciente = ?, id_medico = ?, descripcion = ? WHERE id_diagnostico = ?";
+        try (Connection conn = Conexion.getConexion();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, diagnostico.getDescripcion());
-            ps.setString(2, diagnostico.getReceta());
-            ps.setInt(3, diagnostico.getIdDiagnostico());
+            ps.setInt(1, d.getPaciente().getIdPaciente());
+            ps.setInt(2, d.getMedico().getIdMedico());
+            ps.setString(3, d.getDescripcion());
+            ps.setInt(4, d.getIdDiagnostico());
 
             return ps.executeUpdate() > 0;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("Error en actualizarDiagnostico(): " + e.getMessage());
             return false;
         }
     }
 
-    // === ELIMINAR DIAGNOSTICO ===
+    // === Eliminar diagnóstico ===
     public boolean eliminarDiagnostico(int idDiagnostico) {
         String sql = "DELETE FROM diagnostico WHERE id_diagnostico = ?";
-        try (Connection conn = conexion.estableConexion();
+        try (Connection conn = Conexion.getConexion();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, idDiagnostico);
             return ps.executeUpdate() > 0;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("Error en eliminarDiagnostico(): " + e.getMessage());
             return false;
         }
     }
-
-    // === OBTENER DIAGNOSTICOS POR PACIENTE ===
-    public List<Diagnostico> obtenerPorPaciente(int idPaciente) {
-        List<Diagnostico> lista = new ArrayList<>();
-        String sql = """
-        SELECT d.*
-        FROM diagnostico d
-        JOIN turno t ON d.id_turno = t.id_turno
-        WHERE t.id_paciente = ?
-        ORDER BY d.fecha DESC
-        """;
-
-        try (Connection conn = conexion.estableConexion();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, idPaciente);
-            ResultSet rs = ps.executeQuery();
-
-            while (rs.next()) {
-                Turno turno = new TurnoRepositorio().obtenerPorId(rs.getInt("id_turno"));
-                Diagnostico d = new Diagnostico(
-                        rs.getInt("id_diagnostico"),
-                        turno,
-                        rs.getTimestamp("fecha").toLocalDateTime(),
-                        rs.getString("descripcion"),
-                        rs.getString("receta")
-                );
-                lista.add(d);
-            }
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return lista;
-    }
-
 }
